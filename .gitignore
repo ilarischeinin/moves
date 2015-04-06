@@ -1,4 +1,5 @@
 data
+*.rda
 *.rds
 shinyapps
 

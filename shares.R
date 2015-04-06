@@ -62,7 +62,9 @@ shares[is.na(shares)] <- 0
 shares$activity <- factor(shares$activity, levels=c("boat", "ferry", "car",
   "bus", "train", "underground", "tram", "cycling", "walking"), ordered=TRUE)
 
-saveRDS(shares, "shares/shares.rds")
+if (!file.exists("shares"))
+  dir.create("shares", mode="755")
+saveRDS(shares, file.path("shares", "shares.rds"))
 
 # run shiny app
 # library(shiny)
