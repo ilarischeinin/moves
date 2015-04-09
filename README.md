@@ -1,8 +1,9 @@
 R scripts to visualize Moves app data
 =====================================
 
-This repository contains scripts to visualize personal data from the
-[Moves app](https://www.moves-app.com).
+This repository contains scripts to visualize data from the
+[Moves app](https://www.moves-app.com). The linked visualizations are generated
+from own my personal data, which is not publicly available for download.
 
 shares.R
 --------
