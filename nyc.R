@@ -69,7 +69,10 @@ setkey(activities, segment)
 
 # fix errors in data
 activities <- activities %>%
-  filter(!(date == as.IDate("2015-02-28") & latitude < 40.705))
+  filter(!(date == as.IDate("2015-02-28") & latitude < 40.705)) %>%
+  filter(!(date == as.IDate("2015-04-24") & longitude > -73.97)) %>%
+  filter(!(date == as.IDate("2015-04-24") & latitude < 40.7046)) %>%
+  filter(!(segment == "4/19/15-9" & latitude < 40.653))
 
 # restrict to New York
 nycactivities <- activities %>%

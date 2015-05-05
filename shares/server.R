@@ -44,7 +44,7 @@ shinyServer(function(input, output) {
         annotate("text", x=legends, y=0, label=jobs,
         vjust=1.5, hjust=c(-0.1, rep(0.5, length(legends)-2), 1.1))
     }
-    p
+    p + ggtitle("Shares of Different Forms of Transportation")
   })
 })
 

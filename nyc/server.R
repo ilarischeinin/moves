@@ -42,7 +42,7 @@ shinyServer(function(input, output) {
         #   nycactivities[segment, latitude],
         #   col=as.character(cols[nycactivities[segment, activity][1]]), weight=3)
         addPolylines(data=nycactivities[segment], ~longitude, ~latitude,
-          col=color, weight=3)
+          col=color, weight=4)
     }
     if (input$places)
       m <- m %>% addCircles(data=nycplaces, ~longitude, ~latitude,

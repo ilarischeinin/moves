@@ -1,15 +1,20 @@
 library(shiny)
 
 shinyUI(fluidPage(
-  titlePanel("Move Shares"),
+  titlePanel(title=NULL, windowTitle="Transportation Shares"),
   verticalLayout(
     plotOutput("plot", height="500px"),
     wellPanel(fluidRow(
-      column(4, radioButtons("variable", label=NULL,
+      column(3, radioButtons("variable", label=NULL,
         choices=list("time", "distance"), selected="time")),
-      column(4, radioButtons("share", label=NULL,
+      column(3, radioButtons("share", label=NULL,
         choices=list(absolute="stack", relative="fill"), selected="stack")),
-      column(4, checkboxInput("annotate", label="annotate", value=FALSE))
+      column(3, checkboxInput("annotate", label="annotate", value=FALSE)),
+      column(3, p("This is a visualization of the shares of different forms of",
+        "transportation (excluding flying) based on my personal",
+        a(href="https://www.moves-app.com", "Moves app"),
+        "data. Source code is available on",
+        a(href="https://github.com/ilarischeinin/moves", "GitHub.")))
     ))
   )
 ))
