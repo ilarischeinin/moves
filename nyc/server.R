@@ -11,6 +11,7 @@ cols <- c(walking="green",
   train="black",
   bus="black",
   car="black",
+  helicopter="black",
   ferry="blue",
   boat="blue")
 
@@ -22,17 +23,10 @@ m <- leaflet() %>%
 
 shinyServer(function(input, output) {
   output$plot <- renderLeaflet({
-    if (input$heatmap) {
-      for (i in seq_along(nyccontours)) {
-        m <- m %>%
-          addPolygons(nyccontours[[i]]$x, nyccontours[[i]]$y,
-            color="black", weight=1, fillColor="red")
-      }
-    }
     activities <- input$activities
     if ("transport" %in% activities)
       activities <- c(activities, "underground", "car", "bus", "train",
-        "tram", "boat", "ferry")
+        "tram", "helicopter", "boat", "ferry")
     for (segment in unique(nycactivities$segment)) {
       if (!nycactivities[segment, activity][1] %in% activities)
        next
@@ -42,11 +36,18 @@ shinyServer(function(input, output) {
         #   nycactivities[segment, latitude],
         #   col=as.character(cols[nycactivities[segment, activity][1]]), weight=3)
         addPolylines(data=nycactivities[segment], ~longitude, ~latitude,
-          col=color, weight=4)
+          col=color, weight=4, popup=~activity)
+    }
+    if (input$heatmap) {
+      for (i in seq_along(nyccontours)) {
+        m <- m %>%
+          addPolygons(nyccontours[[i]]$x, nyccontours[[i]]$y,
+            color="black", weight=1, fillColor="red")
+      }
     }
     if (input$places)
       m <- m %>% addCircles(data=nycplaces, ~longitude, ~latitude,
-        col="blue", popup=~name)
+        col="yellow", popup=~name)
     m
   })
 })

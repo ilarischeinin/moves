@@ -67,16 +67,28 @@ activities <- tbl_dt(rbindlist(pblapply(activitylist, extractdays)))
 activities$date <- as.IDate(activities$time, format="%Y-%m-%dT%H:%M:%S")
 setkey(activities, segment)
 
+# count running as walking
+activities[activities$activity == "running", "activity"] <- "walking"
+
+activities[activities$date == "2015-05-24" & activities$activity == "transport",
+  "activity"] <- "helicopter"
+
+# The app seems to have a tendency to locate me on roads, which seems to be a
+# problem especially along the shores of the East River, where it frequently
+# placed me on the wrong side of the river, hopping back and forth. In the
+# beginning I was fixing these manually, but then got tired of it.
 # fix errors in data
-activities <- activities %>%
-  filter(!(date == as.IDate("2015-02-28") & latitude < 40.705)) %>%
-  filter(!(date == as.IDate("2015-04-24") & longitude > -73.97)) %>%
-  filter(!(date == as.IDate("2015-04-24") & latitude < 40.7046)) %>%
-  filter(!(segment == "4/19/15-9" & latitude < 40.653))
+# activities <- activities %>%
+#   filter(!(date == as.IDate("2015-02-28") & latitude < 40.705)) %>%
+#   filter(!(date == as.IDate("2015-04-24") & longitude > -73.97)) %>%
+#   filter(!(date == as.IDate("2015-04-24") & latitude < 40.7046)) %>%
+#   filter(!(segment == "4/19/15-9" & latitude < 40.653))
 
 # restrict to New York
 nycactivities <- activities %>%
-  filter(date >= as.IDate("2015-02-10"), longitude < -70)
+  filter((date == as.IDate("2015-02-10") & longitude < -70) |
+    (date > as.IDate("2015-02-10") & date < as.IDate("2015-06-17")) |
+    (date == as.IDate("2015-06-17") & longitude < -70 & activity != "airplane"))
 
 # places
 
@@ -99,7 +111,9 @@ places$enddate <- as.IDate(places$end, format="%Y-%m-%dT%H:%M:%S")
 places$endtime <- as.ITime(places$end, format="%Y-%m-%dT%H:%M:%S")
 
 nycplaces <- places %>%
-  filter(startdate >= as.IDate("2015-02-10"), longitude < -70)
+  filter((startdate == as.IDate("2015-02-10") & longitude < -70) |
+    (startdate > as.IDate("2015-02-10") & enddate < as.IDate("2015-06-17")) |
+    (enddate == as.IDate("2015-06-17") & longitude < -70))
 
 # contour
 

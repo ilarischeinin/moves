@@ -29,6 +29,9 @@ activities$enddate <- as.IDate(activities$end, format="%Y-%m-%dT%H:%M:%S")
 # remove activies with a distance of 0 (includes manually added + others)
 activities <- activities %>% filter(distance > 0)
 
+activities[activities$date == "5/24/15" & activities$activity == "transport",
+  "activity"] <- "helicopter"
+
 # check missing modes of transport?
 if (sum(activities$activity == "transport") > 0) {
   print(activities %>% filter(activity == "transport"))
@@ -44,7 +47,10 @@ activities <- activities %>%
 
 # exclude flying
 activities <- activities %>%
-  filter(activity != "airplane")
+  filter(activity != "airplane", activity != "helicopter")
+
+# count running as walking
+activities[activities$activity == "running", "activity"] <- "walking"
 
 # calculate shares
 shares <- activities %>%
