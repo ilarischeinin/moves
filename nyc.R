@@ -132,6 +132,6 @@ save(nycactivities, nycplaces, nyccontours, file=file.path("nyc", "nyc.rda"))
 # runApp("nyc")
 
 # suppressMessages(library(shinyapps))
-# deployApp("nyc", "moves-nyc")
+# deployApp("nyc", appName="moves-nyc")
 
 # EOF

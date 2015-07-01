@@ -8,11 +8,11 @@ from my own personal data, which is not publicly available for download.
 shares.R
 --------
 
-[Visualize](http://ilari.scheinin.fi:3838/moves-share/) shares of
+[Visualize](http://ilari.scheinin.fi/shiny/moves-share/) shares of
 different forms of transportation over time.
 
 nyc.R
 -----
 
-[Visualize](http://ilari.scheinin.fi:3838/moves-nyc/) what parts of New
+[Visualize](http://ilarischeinin.shinyapps.io/moves-nyc/) what parts of New
 York I explored when I was at the [Recurse Center](https://www.recurse.com).

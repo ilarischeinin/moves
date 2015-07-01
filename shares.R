@@ -78,6 +78,6 @@ saveRDS(shares, file.path("shares", "shares.rds"))
 
 # deploy shiny app
 # suppressMessages(library(shinyapps))
-# deployApp("shares", "moves-share")
+# deployApp("shares", appName="moves-share")
 
 # EOF
