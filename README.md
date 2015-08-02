@@ -18,3 +18,9 @@ nyc.R
 
 [Visualize](http://ilarischeinin.shinyapps.io/moves-nyc/) what parts of New
 York I explored when I was at the [Recurse Center](https://www.recurse.com).
+
+boating.R
+-----
+
+[Visualize](http://ilari.scheinin.fi/shiny/moves-boating/) where I have been
+boating.
