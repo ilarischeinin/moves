@@ -13,7 +13,7 @@ shinyServer(function(input, output) {
         options=layersControlOptions(collapsed=FALSE))
       for (segment in unique(boating$segment)) {
           map <- map %>% addPolylines(data=boating[segment, ],
-            ~longitude, ~latitude, col="blue", weight=4,
+            ~longitude, ~latitude, col="blue", weight=4, popup=~date[1],
             group=as.character(year(boating[segment, date][1])))
       }
       map
