@@ -1,10 +1,11 @@
+library(data.table)
 library(leaflet)
 library(shiny)
-library(data.table)
 
 load("nyc.rda")
 
 cols <- c(walking="green",
+  running="green",
   cycling="cyan",
   tram="black",
   underground="black",
@@ -15,35 +16,40 @@ cols <- c(walking="green",
   ferry="blue",
   boat="blue")
 
-m <- leaflet() %>%
-  addTiles() %>%
-  mapOptions(zoomToLimits="first")
+groups <- c(walking="walking",
+  running="walking",
+  cycling="cycling",
+  tram="transport",
+  underground="transport",
+  train="transport",
+  bus="transport",
+  car="transport",
+  helicopter="transport",
+  ferry="transport",
+  boat="transport")
 
 shinyServer(function(input, output) {
   output$plot <- renderLeaflet({
-    if (input$heatmap) {
-      for (i in seq_along(nyccontours)) {
-        m <- m %>%
-          addPolygons(nyccontours[[i]]$x, nyccontours[[i]]$y,
-            color="black", weight=1, fillColor="red")
-      }
+    m <- leaflet() %>%
+      addTiles() %>%
+      addLayersControl(overlayGroups=c("walking", "cycling", "transport",
+        "places", "heatmap"), options=layersControlOptions(collapsed=FALSE))
+    for (i in seq_along(nyccontours)) {
+      m <- m %>%
+        addPolygons(nyccontours[[i]]$x, nyccontours[[i]]$y,
+          color="black", weight=1, fillColor="red", group="heatmap")
     }
-    activities <- input$activities
-    if ("transport" %in% activities)
-      activities <- c(activities, "underground", "car", "bus", "train",
-        "tram", "helicopter", "boat", "ferry")
     for (segment in unique(nycactivities$segment)) {
-      if (!nycactivities[segment, activity][1] %in% activities)
-       next
       color <- as.character(cols[nycactivities[segment, activity][1]])
+      group <- as.character(groups[nycactivities[segment, activity][1]])
       m <- m %>%
         addPolylines(data=nycactivities[segment], ~longitude, ~latitude,
-          col=color, weight=4, popup=~activity)
+          col=color, weight=4, popup=~activity, group=group)
     }
-    if (input$places)
-      m <- m %>% addCircles(data=nycplaces, ~longitude, ~latitude,
-        col="yellow", popup=~name)
-    m
+    m <- m %>% addCircles(data=nycplaces, ~longitude, ~latitude,
+      col="yellow", popup=~name, group="places")
+    m %>%
+      hideGroup(c("places", "heatmap"))
   })
 })
 

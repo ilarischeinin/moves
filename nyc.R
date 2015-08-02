@@ -3,10 +3,9 @@
 suppressMessages({
   library(data.table)
   library(dplyr)
-  library(XML)
-  library(pbapply)
   library(KernSmooth)
-  library(leaflet)
+  library(pbapply)
+  library(XML)
 })
 
 d <- commandArgs(TRUE)[1]
@@ -52,11 +51,11 @@ extractdays <- function(daylist) {
       unlist(segmentlist[seq(from=2, to=length(segmentlist), by=3)])
     dayactivities
   }
-  name <- daylist[[1]]
+  name <- as.Date(daylist[[1]], format="%m/%d/%y")
   daylist[[1]] <- NULL
   activities <- rbindlist(lapply(daylist, extractsegments))
   activities$segment <- paste0(name, "-",
-    rep(1:length(daylist), sapply(daylist, length)/3))
+    sprintf("%03i", rep(1:length(daylist), sapply(daylist, length)/3)))
   setcolorder(activities, c("segment", "time", "activity", "latitude",
     "longitude"))
   activities
@@ -66,9 +65,6 @@ message("Processing activities data...")
 activities <- tbl_dt(rbindlist(pblapply(activitylist, extractdays)))
 activities$date <- as.IDate(activities$time, format="%Y-%m-%dT%H:%M:%S")
 setkey(activities, segment)
-
-# count running as walking
-activities[activities$activity == "running", "activity"] <- "walking"
 
 activities[activities$date == "2015-05-24" & activities$activity == "transport",
   "activity"] <- "helicopter"
