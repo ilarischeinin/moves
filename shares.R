@@ -67,6 +67,7 @@ shares[is.na(shares)] <- 0
 
 shares$activity <- factor(shares$activity, levels=c("boat", "ferry", "car",
   "bus", "train", "underground", "tram", "cycling", "walking"), ordered=TRUE)
+shares <- shares[order(-as.integer(shares$activity)), ]
 
 if (!file.exists("shares"))
   dir.create("shares", mode="755")

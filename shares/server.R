@@ -21,8 +21,7 @@ legends <- c(min(shares$month), legends, max(shares$month))
 
 shinyServer(function(input, output) {
   output$plot <- renderPlot({
-    p <- ggplot(shares,
-      aes(x=month, fill=activity, order=-as.numeric(activity))) +
+    p <- ggplot(shares, aes(x=month, fill=activity)) +
       aes_string(y=input$variable) +
       geom_area(position=input$share) + scale_fill_manual(values=cols) +
       theme(legend.title=element_blank())
