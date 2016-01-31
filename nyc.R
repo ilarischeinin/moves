@@ -4,6 +4,7 @@ suppressMessages({
   library(data.table)
   library(dplyr)
   library(KernSmooth)
+  library(leaflet)
   library(pbapply)
   library(XML)
 })
@@ -54,11 +55,56 @@ nyccontours <- bkde2D(nyccontours,
   bandwidth=c(bw.ucv(nyccontours[,1]), bw.ucv(nyccontours[,2])))
 nyccontours <- contourLines(nyccontours$x1, nyccontours$x2, nyccontours$fhat)
 
-# save
+# build map
 
+cols <- c(walking="green",
+  running="green",
+  cycling="cyan",
+  tram="black",
+  underground="black",
+  train="black",
+  bus="black",
+  car="black",
+  helicopter="black",
+  ferry="blue",
+  boat="blue")
+
+groups <- c(walking="walking",
+  running="walking",
+  cycling="cycling",
+  tram="transport",
+  underground="transport",
+  train="transport",
+  bus="transport",
+  car="transport",
+  helicopter="transport",
+  ferry="transport",
+  boat="transport")
+
+map <- leaflet() %>%
+  addTiles() %>%
+  addLayersControl(overlayGroups=c("walking", "cycling", "transport",
+    "places", "heatmap"), options=layersControlOptions(collapsed=FALSE))
+for (i in seq_along(nyccontours)) {
+  map <- map %>%
+    addPolygons(nyccontours[[i]]$x, nyccontours[[i]]$y,
+      group="heatmap", color="black", weight=1, fillColor="red")
+}
+for (segment in unique(nyctracks$segment)) {
+  map <- map %>%
+    addPolylines(data=nyctracks[segment], ~longitude, ~latitude,
+      group=~as.character(groups[activity[1]]),
+      col=~as.character(cols[activity[1]]), weight=4, popup=~activity)
+}
+map <- map %>% addCircles(data=nycplaces, ~longitude, ~latitude,
+  group="places", col="yellow", popup=~name)
+map <- map %>%
+  hideGroup(c("places", "heatmap"))
+
+# save
 if (!file.exists("nyc"))
   dir.create("nyc", mode="755")
-save(nyctracks, nycplaces, nyccontours, file=file.path("nyc", "nyc.rda"))
+saveRDS(map, file.path("nyc", "nyc.rds"))
 
 # shiny::runApp("nyc")
 
