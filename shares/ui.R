@@ -1,9 +1,8 @@
 library(shiny)
 
-shinyUI(fluidPage(
-  titlePanel(title=NULL, windowTitle="Transportation Shares"),
-  verticalLayout(
-    plotOutput("plot", height="500px"),
+shinyUI(
+  fillPage(title="Transportation Shares",
+    plotOutput("plot", height="80%"),
     wellPanel(fluidRow(
       column(3, radioButtons("variable", label=NULL,
         choices=list("time", "distance"), selected="time")),
@@ -17,6 +16,6 @@ shinyUI(fluidPage(
         a(href="https://github.com/ilarischeinin/moves", "GitHub.")))
     ))
   )
-))
+)
 
 # EOF
