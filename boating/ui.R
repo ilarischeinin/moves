@@ -1,16 +1,26 @@
 library(leaflet)
 library(shiny)
+library(shinyjs)
 
 shinyUI(
-  fluidPage(verticalLayout(
-    titlePanel(title=NULL, windowTitle="Boating Moves"),
-    tags$style(type="text/css", "html, body {width:100%; height:100%}"),
-    leafletOutput("plot", height="600px"),
-    wellPanel(p("This map shows my personal",
-      a(href="https://www.moves-app.com", "Moves app"),
-      "data for boating. Source code is available on",
-      a(href="https://github.com/ilarischeinin/moves", "GitHub.")))
-  ))
+  fillPage(title="Boating Moves",
+    useShinyjs(),
+    leafletOutput("leaflet", height="100%"),
+    absolutePanel(id="description", bottom=10L, left=10L,
+      wellPanel(
+        actionButton("hide", label="X",
+          style="margin-right: 1em; font-size: x-small;"),
+        "This map shows my personal",
+        a(href="https://www.moves-app.com", "Moves app"),
+        "data for boating. Source code is available on",
+        a(href="https://github.com/ilarischeinin/moves", "GitHub.")
+      )
+    ),
+    absolutePanel(bottom=10L, left=10L,
+      actionButton("show", label="?",
+        style="display: none; font-size: x-small;")
+    )
+  )
 )
 
 # EOF
