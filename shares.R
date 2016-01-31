@@ -10,21 +10,8 @@ if (is.na(d))
   d <- "."
 
 # read data
-activitiesfile <- file.path(d, "csv", "full", "activities.csv")
-if (!file.exists(activitiesfile)) {
-  zipfile <- file.path(d, "csv.zip")
-  if (file.exists(zipfile))
-    unzip(zipfile, exdir=d)
-  rm(list="zipfile")
-}
-
-if (!file.exists(activitiesfile))
-  stop("File not found: ", activitiesfile)
-
-activities <- tbl_df(fread(activitiesfile))
-setnames(activities, tolower(colnames(activities)))
-activities$startdate <- as.IDate(activities$start, format="%Y-%m-%dT%H:%M:%S")
-activities$enddate <- as.IDate(activities$end, format="%Y-%m-%dT%H:%M:%S")
+source("library.R")
+activities <- get_activities(d)
 
 # remove activies with a distance of 0 (includes manually added + others)
 activities <- activities %>% filter(distance > 0)
@@ -73,12 +60,6 @@ if (!file.exists("shares"))
   dir.create("shares", mode="755")
 saveRDS(shares, file.path("shares", "shares.rds"))
 
-# run shiny app
-# library(shiny)
-# runApp("shares")
-
-# deploy shiny app
-# suppressMessages(library(shinyapps))
-# deployApp("shares", appName="moves-share")
+# shiny::runApp("shares")
 
 # EOF
