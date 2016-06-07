@@ -1,5 +1,6 @@
 library(data.table)
 library(leaflet)
+library(leafletplugins)
 library(shiny)
 
 boating <- readRDS("boating.rds")
@@ -17,7 +18,9 @@ map <- leaflet() %>%
   addLayersControl(
     baseGroups=c("Hydda", "OpenTopoMap", "Esri World Imagery"),
     overlayGroups=c("OpenSeaMap", as.character(unique(year(boating$date)))),
-    options=layersControlOptions(collapsed=FALSE))
+    options=layersControlOptions(collapsed=FALSE)) %>%
+    addControlFullScreen() %>%
+    addControlGPS()
 for (segment in unique(boating$segment)) {
   map <- map %>% addPolylines(data=boating[segment, ],
     lng=~longitude, lat=~latitude, col="blue", weight=4, popup=~date[1],
