@@ -13,9 +13,12 @@ cols <- c(walking=brewer.pal(9, 'Paired')[4],
   ferry=brewer.pal(9, 'Paired')[1],
   boat=brewer.pal(9, 'Paired')[2])
 
-places <- c("Amsterdam", "Amsterdam", "Finland", "Helsinki", "New York", NA)
-jobs <- c("commute", "work from home", "vacation", "work from home", "commute", NA)
-events <- unique(shares$month)[c(3, 8, 11, 16, 20)] + 15
+# places <- c("Amsterdam", "Amsterdam", "Finland", "Helsinki", "New York", NA)
+# jobs <- c("commute", "work from home", "vacation", "work from home", "commute", NA)
+# events <- unique(shares$month)[c(3, 8, 11, 16, 20)] + 15
+places <- c("Amsterdam", "Amsterdam", "Helsinki", "New York", "Helsinki", "Dublin")
+jobs <- c("commute", "no commute", "no commute", "commute", "no commute", "commute")
+events <- unique(shares$month)[c(3, 8, 16, 20, 30)] + 15
 legends <- events[-length(events)] + diff(events)/2
 legends <- c(min(shares$month), legends, max(shares$month))
 
