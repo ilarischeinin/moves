@@ -3,28 +3,34 @@ library(leaflet)
 library(leafletplugins)
 library(shiny)
 
-boating <- readRDS("boating.rds")
+load("boating.rda")
 
 map <- leaflet() %>%
+  addProviderTiles("Esri.WorldImagery", group="Esri World Imagery") %>%
   addProviderTiles("Hydda.Full", group="Hydda") %>%
   addProviderTiles("OpenTopoMap", group="OpenTopoMap") %>%
-  addProviderTiles("Esri.WorldImagery", group="Esri World Imagery") %>%
   addTiles(
     urlTemplate="http://tiles.openseamap.org/seamark/{z}/{x}/{y}.png",
     attribution=paste('Map data: &copy;',
     '<a href="http://www.openseamap.org">OpenSeaMap</a> contributors'),
     group="OpenSeaMap") %>%
-  fitBounds(20.9, 59.7, 25.4, 60.4) %>%
+  fitBounds(18.2, 59.3, 25.5, 60.5) %>%
+  # addRectangles(18.2, 59.3, 25.5, 60.5) %>%
   addLayersControl(
-    baseGroups=c("Hydda", "OpenTopoMap", "Esri World Imagery"),
-    overlayGroups=c("OpenSeaMap", as.character(unique(year(boating$date)))),
-    options=layersControlOptions(collapsed=FALSE)) %>%
+      baseGroups=c("OpenTopoMap", "Hydda", "Esri World Imagery"),
+      overlayGroups=c("OpenSeaMap", "Weather stations and buoys", 
+        unique(years))
+    ) %>%
     addControlFullScreen() %>%
-    addControlGPS()
-for (segment in unique(boating$segment)) {
-  map <- map %>% addPolylines(data=boating[segment, ],
-    lng=~longitude, lat=~latitude, col="blue", weight=4, popup=~date[1],
-    group=~as.character(year(date[1])))
+    # addControlGPS() %>%
+    addCircleMarkers(data=stations, lng=~longitude, lat=~latitude, radius=2L,
+      group="Weather stations and buoys", color="black",
+      popup=~popup)
+for (segment in unique(tracks$segment)) {
+  map <- map %>% addPolylines(data=tracks[segment, ],
+    lng=~longitude, lat=~latitude, col="blue", weight=4L,
+    popup=popups[[segment]],
+    group=years[[segment]])
 }
 
 shinyServer(function(input, output) {
