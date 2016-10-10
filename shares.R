@@ -23,6 +23,7 @@ activities[activities$date == "5/24/15" & activities$activity == "transport",
 if (sum(activities$activity == "transport") > 0) {
   print(activities %>% filter(activity == "transport"))
   stop("Missing modes of transport.")
+  # activities <- filter(activities, activity != "transport")
 }
   
 # restict to full months
