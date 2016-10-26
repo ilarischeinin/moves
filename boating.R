@@ -18,15 +18,10 @@ d <- commandArgs(TRUE)[1]
 if (is.na(d))
   d <- "."
 
-apikey <- readLines("boating-fmi-apikey.txt")
+apikey <- readLines(file.path("boating", "fmi-apikey.txt"))
 
 source("library.R")
 all_tracks <- get_tracks(d)
-
-# print(all_tracks %>% filter(activity == "transport"), n=Inf)
-
-# all_tracks$activity[all_tracks$date == as.Date("2016-08-10") &
-#   all_tracks$activity == "transport"] <- "boat"
 
 boating <- all_tracks %>%
   filter(activity == "boat") %>%
@@ -36,28 +31,12 @@ boating <- all_tracks %>%
   filter(date(time) != as.Date("2016-08-14") |
     time <= as.POSIXct("2016-08-14T15:51:15.000+03:00", format="%FT%T"))
 
-# fetch a list of all fmi stations
-all_stations <- XML::readHTMLTable(
-    "http://en.ilmatieteenlaitos.fi/observation-stations",
-    which=1L, stringsAsFactors=FALSE) %>%
-  tbl_df() %>%
-  mutate(
-    FMISID=FMISID %>% as.integer(),
-    LPNN=LPNN %>% as.integer(),
-    WMO=WMO %>% as.integer(),
-    Lat=Lat %>% as.numeric(),
-    Lon=Lon %>% as.numeric(),
-    Elevation=Elevation %>% sub(pattern="\n.*$", replacement="") %>%
-      as.integer(),
-    Started=Started %>% as.integer()
-  )
-# extract weather stations and wave buoys
-weather_stations <- all_stations %>%
-  filter(str_detect(Groups, "Weather stations"))
-wave_stations <- all_stations %>%
-  filter(str_detect(Groups, "Buoys"))
+# fetch lists of weather stations, wave buoys, and mareographs
+weather_stations <- fmi_stations(groups="Weather stations")
+wave_stations <- fmi_stations(groups="Buoys")
+mareo_stations <- fmi_stations(groups="Mareographs")
 
-# calculate distances to weather stations and wave buyoys,
+# calculate distances to weather stations, wave buyoys and mareographs,
 # and pick the closest one within 30 NM
 weather_distances <- distm(boating[, .(longitude, latitude)],
   weather_stations[, c("Lon", "Lat")]) / 1852
@@ -72,6 +51,13 @@ boating$wave_station <-
   wave_stations$FMISID[apply(wave_distances, 1L, which.min)]
 boating$wave_distance <- apply(wave_distances, 1L, min)
 boating$wave_station[boating$wave_distance > 30] <- NA
+
+mareo_distances <- distm(boating[, .(longitude, latitude)],
+  mareo_stations[, c("Lon", "Lat")]) / 1852
+boating$mareo_station <-
+  mareo_stations$FMISID[apply(mareo_distances, 1L, which.min)]
+boating$mareo_distance <- apply(mareo_distances, 1L, min)
+boating$mareo_station[boating$mareo_distance > 30] <- NA
 
 # define function to access and cache the fmi api
 cached_fmi <- function(query, fmisid, date) {
@@ -97,19 +83,19 @@ cached_fmi <- function(query, fmisid, date) {
     layers <- client$listLayers()
   })
   if (length(layers) > 0L) {
-  suppressMessages({
-    response <- client$getLayer(layer=layers[1L],
-      crs="+proj=longlat +datum=WGS84", swapAxisOrder=TRUE,
-      parameters=list(splitListFields=TRUE))
-  })
-  data <- response@data %>%
-    tbl_df() %>%
-    transmute(
-      fmisid=fmisid,
-      time=ymd_hms(Time),
-      variable=ParameterName,
-      value=as.numeric(ParameterValue)
-    )
+    suppressMessages({
+      response <- client$getLayer(layer=layers[1L],
+        crs="+proj=longlat +datum=WGS84", swapAxisOrder=TRUE,
+        parameters=list(splitListFields=TRUE))
+    })
+    data <- response@data %>%
+      tbl_df() %>%
+      transmute(
+        fmisid=fmisid,
+        time=ymd_hms(Time),
+        variable=ParameterName,
+        value=as.numeric(ParameterValue)
+      )
   } else {
     data <- data_frame(
       fmisid=integer(),
@@ -130,6 +116,10 @@ weather_dates <- boating %>%
 wave_dates <- boating %>%
   filter(!is.na(wave_station)) %>%
   distinct(wave_station, date=date(time))
+
+mareo_dates <- boating %>%
+  filter(!is.na(mareo_station)) %>%
+  distinct(mareo_station, date=date(time))
 
 # retrieve data
 weather_data <- weather_dates %>%
@@ -160,6 +150,20 @@ wave_data <- wave_dates %>%
   data.table(key=c("fmisid", "time")) %>%
   tbl_dt()
 
+mareo_data <- mareo_dates %>%
+  nrow() %>%
+  seq_len() %>%
+  lapply(function(row) {
+    cached_fmi(
+      query="fmi::observations::mareograph::simple",
+      fmisid=mareo_dates$mareo_station[row],
+      date=mareo_dates$date[row])
+  }) %>%
+  bind_rows() %>%
+  spread(variable, value) %>%
+  data.table(key=c("fmisid", "time")) %>%
+  tbl_dt()
+
 # join with rolling joins
 setkey(boating, weather_station, time)
 boating <- weather_data[boating, roll=TRUE] %>%
@@ -167,6 +171,9 @@ boating <- weather_data[boating, roll=TRUE] %>%
 setkey(boating, wave_station, time)
 boating <- wave_data[boating, roll=TRUE] %>%
   rename(wave_station=fmisid)
+setkey(boating, mareo_station, time)
+boating <- mareo_data[boating, roll=TRUE] %>%
+  rename(mareo_station=fmisid)
 setkey(boating, time)
 setkey(boating, segment)
 
@@ -186,45 +193,61 @@ segment_length <- function(latitude, longitude) {
     `/`(1852)
 }
 
-# function to get a range for degrees
+# function to format a range for degrees
 # when a range is around north, we want to show it as e.g. 350-010 °,
 # not the other way around
-range_degrees <- function(x) {
-  r <- range(x)
-  # get average direction
-  # https://en.m.wikipedia.org/wiki/Mean_of_circular_quantities
-  x <- sum(cos(x * pi / 180))
-  y <- sum(sin(x * pi / 180))
-  average_direction <- abs(atan2(y, x) * 180 / pi)
-  if (average_direction < 90 || average_direction > 270) {
-    r <- rev(r)
+format_direction <- function(x) {
+  if (length(x) > 1L) {
+    if (any(x < 90) && any(x > 270)) {
+      # get average direction
+      # https://en.m.wikipedia.org/wiki/Mean_of_circular_quantities
+      average_direction <- abs(atan2(
+        sum(sin(x * pi / 180)),
+        sum(cos(x * pi / 180))
+      ) * 180 / pi)
+      if (average_direction < 90 || average_direction > 270) {
+        x <- range(x) %>% rev()
+      } else {
+        x <- range(x)
+      }
+    } else {
+      x <- range(x)
+    }
   }
-  sprintf("%03.0f", r)
+  sprintf("%03.0f", x)
 }
 
-range_round <- function(x) {
-  range(x) %>% round(digits=1L)
+# when formatting sea levels, include the + sign for positive values
+format_level <- function(x) {
+  if (length(x) > 1L) {
+    x <- range(x)
+  }
+  sprintf("%+.1f", x)
 }
 
-format_range <- function(x, pre="", post="", range_function=range_round) {
+format_round <- function(x) {
+  if (length(x) > 1L) {
+    x <- range(x)
+  }
+  round(x, digits=1L)
+}
+
+format_range <- function(x, pre="", post="", fun=format_round) {
   x <- x[!is.na(x)]
   if (length(x) == 0L) {
     return("")
   }
   x <- unique(x)
-  if (length(x) == 1L) {
-    y <- paste(x)
-  } else {
-    y <- do.call(range_function, list(x)) %>%
-      paste(collapse=" – ")
-  }
+  y <- do.call(fun, list(x)) %>%
+    paste(collapse=" – ")
+    # paste(collapse=" … ")
   return(paste0(pre, y, post))
 }
 
 segments <- boating %>%
   group_by(segment) %>%
   summarise(
-    year=year(time),
+    year=year(first(time)),
     length=segment_length(latitude, longitude),
     hours=difftime(max(time), min(time), units="hours") %>% as.numeric,
     date=date(time) %>%
@@ -234,17 +257,19 @@ segments <- boating %>%
     wind_gusts=(wg_10min * 3600 / 1852) %>%
       format_range("<br />Wind gusts: ", " kn"),
     wind_direction=wd_10min %>%
-      format_range("<br />Wind from: ", " °", range_function=range_degrees),
+      format_range("<br />Wind from: ", " °", fun=format_direction),
     wave_height=WaveHs %>%
       format_range("<br />Significant wave height: ", " m"),
     wave_direction=ModalWDi %>%
-      format_range("<br />Waves from: ", " °", range_function=range_degrees),
-    air_temp=t2m %>%
-      format_range("<br />Air temperature: ", " °C"),
+      format_range("<br />Waves from: ", " °", fun=format_direction),
+    water_level=(WATLEV / 10) %>%
+      format_range("<br />Water level: ", " cm", fun=format_level),
     water_temp=TWATER %>%
       format_range("<br />Water temperature: ", " °C"),
+    air_temp=t2m %>%
+      format_range("<br />Air temperature: ", " °C"),
     pressure=p_sea %>%
-      format_range("<br />Pressure: ", " kPa")
+      format_range("<br />Air pressure: ", " kPa")
   ) %>%
   mutate(
     distance=paste0("<br />Distance: ", round(length, digits=1L), " NM"),
@@ -264,8 +289,9 @@ popups <- paste0(
   segments$wind_direction,
   segments$wave_height,
   segments$wave_direction,
-  segments$air_temp,
+  segments$water_level,
   segments$water_temp,
+  segments$air_temp,
   segments$pressure)
 names(popups) <- segments$segment
 # for some reason leaflet cannot handle named character vectors,
@@ -277,11 +303,12 @@ popups <- as.list(popups)
 tracks <- boating %>%
   select(segment, latitude, longitude)
 
-stations <- all_stations %>%
-  filter(
-      FMISID %in% unique(weather_dates$weather_station) |
-      FMISID %in% unique(wave_dates$wave_station)
-    ) %>%
+stations <- fmi_stations() %>%
+  # filter(
+  #     FMISID %in% unique(weather_dates$weather_station) |
+  #     FMISID %in% unique(wave_dates$wave_station) |
+  #     FMISID %in% unique(mareo_dates$mareo_station)
+  #   ) %>%
     transmute(
       latitude=Lat,
       longitude=Lon,

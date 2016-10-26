@@ -18,13 +18,13 @@ map <- leaflet() %>%
   # addRectangles(18.2, 59.3, 25.5, 60.5) %>%
   addLayersControl(
       baseGroups=c("OpenTopoMap", "Hydda", "Esri World Imagery"),
-      overlayGroups=c("OpenSeaMap", "Weather stations and buoys", 
+      overlayGroups=c("OpenSeaMap", "FMI Stations", 
         unique(years))
     ) %>%
     addControlFullScreen() %>%
     # addControlGPS() %>%
     addCircleMarkers(data=stations, lng=~longitude, lat=~latitude, radius=2L,
-      group="Weather stations and buoys", color="black",
+      group="FMI Stations", color="black",
       popup=~popup)
 for (segment in unique(tracks$segment)) {
   map <- map %>% addPolylines(data=tracks[segment, ],
