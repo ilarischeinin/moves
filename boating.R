@@ -18,7 +18,9 @@ d <- commandArgs(TRUE)[1]
 if (is.na(d))
   d <- "."
 
-apikey <- readLines(file.path("boating", "fmi-apikey.txt"))
+# FMI observations require a key from:
+# https://ilmatieteenlaitos.fi/rekisteroityminen-avoimen-datan-kayttajaksi
+source(file.path("boating", "fmi.R"))
 
 source("library.R")
 all_tracks <- get_tracks(d)
@@ -27,9 +29,7 @@ boating <- all_tracks %>%
   filter(activity == "boat") %>%
   # mutate(time=ymd_hms(time)) %>%
   mutate(time=as.POSIXct(time, format="%FT%T")) %>%
-  select(segment, time, latitude, longitude) %>%
-  filter(date(time) != as.Date("2016-08-14") |
-    time <= as.POSIXct("2016-08-14T15:51:15.000+03:00", format="%FT%T"))
+  select(segment, time, latitude, longitude)
 
 # fetch lists of weather stations, wave buoys, and mareographs
 weather_stations <- fmi_stations(groups="Weather stations")
