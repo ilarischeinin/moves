@@ -3,7 +3,7 @@ library(leaflet)
 library(leafletplugins)
 library(shiny)
 
-load("boating.rda")
+load("sailing.rda")
 
 map <- leaflet() %>%
   fitBounds(18.2, 59.3, 25.5, 60.5) %>%
@@ -54,7 +54,7 @@ if (file.exists("navionics.R")) {
 
 for (segment in unique(tracks$segment)) {
   map <- map %>% addPolylines(data=tracks[segment, ],
-    lng=~longitude, lat=~latitude, col="#5D478B", weight=4L, opacity=0.75,
+    lng=~longitude, lat=~latitude, col="blue", weight=4L, opacity=0.75,
     popup=popups[[segment]], group=years[[segment]])
 }
 

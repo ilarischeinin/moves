@@ -20,12 +20,12 @@ if (is.na(d))
 
 # FMI observations require a key from:
 # https://ilmatieteenlaitos.fi/rekisteroityminen-avoimen-datan-kayttajaksi
-source(file.path("boating", "fmi.R"))
+source(file.path("sailing", "fmi.R"))
 
 source("library.R")
 all_tracks <- get_tracks(d)
 
-boating <- all_tracks %>%
+sailing <- all_tracks %>%
   filter(activity == "boat") %>%
   # mutate(time=ymd_hms(time)) %>%
   mutate(time=as.POSIXct(time, format="%FT%T")) %>%
@@ -38,26 +38,26 @@ mareo_stations <- fmi_stations(groups="Mareographs")
 
 # calculate distances to weather stations, wave buyoys and mareographs,
 # and pick the closest one within 30 NM
-weather_distances <- distm(boating[, .(longitude, latitude)],
+weather_distances <- distm(sailing[, .(longitude, latitude)],
   weather_stations[, c("Lon", "Lat")]) / 1852
-boating$weather_station <-
+sailing$weather_station <-
   weather_stations$FMISID[apply(weather_distances, 1L, which.min)]
-boating$weather_distance <- apply(weather_distances, 1L, min)
-boating$weather_station[boating$weather_distance > 30] <- NA
+sailing$weather_distance <- apply(weather_distances, 1L, min)
+sailing$weather_station[sailing$weather_distance > 30] <- NA
 
-wave_distances <- distm(boating[, .(longitude, latitude)],
+wave_distances <- distm(sailing[, .(longitude, latitude)],
   wave_stations[, c("Lon", "Lat")]) / 1852
-boating$wave_station <-
+sailing$wave_station <-
   wave_stations$FMISID[apply(wave_distances, 1L, which.min)]
-boating$wave_distance <- apply(wave_distances, 1L, min)
-boating$wave_station[boating$wave_distance > 30] <- NA
+sailing$wave_distance <- apply(wave_distances, 1L, min)
+sailing$wave_station[sailing$wave_distance > 30] <- NA
 
-mareo_distances <- distm(boating[, .(longitude, latitude)],
+mareo_distances <- distm(sailing[, .(longitude, latitude)],
   mareo_stations[, c("Lon", "Lat")]) / 1852
-boating$mareo_station <-
+sailing$mareo_station <-
   mareo_stations$FMISID[apply(mareo_distances, 1L, which.min)]
-boating$mareo_distance <- apply(mareo_distances, 1L, min)
-boating$mareo_station[boating$mareo_distance > 30] <- NA
+sailing$mareo_distance <- apply(mareo_distances, 1L, min)
+sailing$mareo_station[sailing$mareo_distance > 30] <- NA
 
 # define function to access and cache the fmi api
 cached_fmi <- function(query, fmisid, date) {
@@ -109,15 +109,15 @@ cached_fmi <- function(query, fmisid, date) {
 }
 
 # define dates for which to retrieve weather and wave data
-weather_dates <- boating %>%
+weather_dates <- sailing %>%
   filter(!is.na(weather_station)) %>%
   distinct(weather_station, date=date(time))
 
-wave_dates <- boating %>%
+wave_dates <- sailing %>%
   filter(!is.na(wave_station)) %>%
   distinct(wave_station, date=date(time))
 
-mareo_dates <- boating %>%
+mareo_dates <- sailing %>%
   filter(!is.na(mareo_station)) %>%
   distinct(mareo_station, date=date(time))
 
@@ -165,17 +165,17 @@ mareo_data <- mareo_dates %>%
   tbl_dt()
 
 # join with rolling joins
-setkey(boating, weather_station, time)
-boating <- weather_data[boating, roll=TRUE] %>%
+setkey(sailing, weather_station, time)
+sailing <- weather_data[sailing, roll=TRUE] %>%
   rename(weather_station=fmisid)
-setkey(boating, wave_station, time)
-boating <- wave_data[boating, roll=TRUE] %>%
+setkey(sailing, wave_station, time)
+sailing <- wave_data[sailing, roll=TRUE] %>%
   rename(wave_station=fmisid)
-setkey(boating, mareo_station, time)
-boating <- mareo_data[boating, roll=TRUE] %>%
+setkey(sailing, mareo_station, time)
+sailing <- mareo_data[sailing, roll=TRUE] %>%
   rename(mareo_station=fmisid)
-setkey(boating, time)
-setkey(boating, segment)
+setkey(sailing, time)
+setkey(sailing, segment)
 
 # function to calculate segment length
 segment_length <- function(latitude, longitude) {
@@ -244,7 +244,7 @@ format_range <- function(x, pre="", post="", fun=format_round) {
   return(paste0(pre, y, post))
 }
 
-segments <- boating %>%
+segments <- sailing %>%
   group_by(segment) %>%
   summarise(
     year=year(first(time)),
@@ -300,7 +300,7 @@ names(popups) <- segments$segment
 years <- as.list(years)
 popups <- as.list(popups)
 
-tracks <- boating %>%
+tracks <- sailing %>%
   select(segment, latitude, longitude)
 
 stations <- fmi_stations() %>%
@@ -315,11 +315,11 @@ stations <- fmi_stations() %>%
       popup=paste0(Name, "<br />", Groups)
     )
 
-if (!file.exists("boating"))
-  dir.create("boating", mode="755")
+if (!file.exists("sailing"))
+  dir.create("sailing", mode="755")
 save(tracks, years, popups, stations,
-  file=file.path("boating", "boating.rda"), compress=FALSE)
+  file=file.path("sailing", "sailing.rda"), compress=FALSE)
 
-# shiny::runApp("boating")
+# shiny::runApp("sailing")
 
 # EOF

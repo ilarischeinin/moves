@@ -3,7 +3,7 @@ library(shiny)
 library(shinyjs)
 
 shinyUI(
-  fillPage(title="Boating Moves",
+  fillPage(title="Sailing Moves",
     useShinyjs(),
     inlineCSS(
       ".leaflet-bottom .legend { padding: 0; background: rgba(0, 0, 0, 0); }"
@@ -13,7 +13,7 @@ shinyUI(
       style="display: none; font-size: small;",
       wellPanel(
         "This map shows my personal", a(href="https://www.moves-app.com",
-        "Moves app"), "data for boating. Clicking a track brings up more",
+        "Moves app"), "data for sailing. Clicking a track brings up more",
         "details, including weather and wave observations. They are obtained",
         "from", a(href="http://en.ilmatieteenlaitos.fi", "FMI's"), "nearest",
         "weather station or wave buoy, when not further away than 30 NM.",

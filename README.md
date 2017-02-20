@@ -24,8 +24,8 @@ nyc.R
 [Visualize](http://ilari.scheinin.fi/shiny/moves-nyc/) what parts of New
 York I explored when I was at the [Recurse Center](https://www.recurse.com).
 
-boating.R
+sailing.R
 ---------
 
-[Visualize](http://ilari.scheinin.fi/shiny/moves-boating/) where I have been
-boating.
+[Visualize](http://ilari.scheinin.fi/shiny/moves-sailing/) where I have been
+sailing.
